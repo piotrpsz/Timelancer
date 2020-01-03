@@ -40,9 +40,9 @@ import (
 )
 
 const (
-	AppName    = "Timelancer"
+	AppName    = "timelancer"
 	AppVersion = "0.1.0"
-	appDir     = ".Timelancer"
+	appDir     = ".timelancer"
 )
 
 func AppDir() string {

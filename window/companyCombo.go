@@ -33,9 +33,11 @@ import (
 )
 
 func (mw *MainWindow) populateCompanyCombo(combo *gtk.ComboBoxText) {
+	combo.AppendText("Select a company")
+	combo.SetActive(0)
+
 	combo.AppendText("Beesoft Software")
 	combo.AppendText("Mobile Software Lab")
-	combo.SetActive(0)
 
 	combo.Connect("changed", mw.selectedCompanyChanged)
 }

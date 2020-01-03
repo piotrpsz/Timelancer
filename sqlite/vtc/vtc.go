@@ -26,7 +26,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package sqlite
+package vtc
 
 const (
 	Ok         = iota // Successful result
@@ -61,6 +61,7 @@ const (
 )
 
 type ValueType uint8
+
 const (
 	Null  ValueType = iota // 0
 	Int                    // 1
@@ -71,8 +72,6 @@ const (
 )
 
 var (
-	databaseHeader  = []byte{0x53, 0x51, 0x4c, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x20, 0x33, 0x00}
-	valueTypeString = [6]string{"Null", "Int", "Float", "Text", "Blob"}
+	DatabaseHeader  = []byte{0x53, 0x51, 0x4c, 0x69, 0x74, 0x65, 0x20, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x20, 0x33, 0x00}
+	ValueTypeString = [6]string{"Null", "Int", "Float", "Text", "Blob"}
 )
-
-

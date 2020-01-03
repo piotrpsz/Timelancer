@@ -33,19 +33,18 @@ import (
 	"strings"
 
 	"Timelancer/shared/tr"
-	"Timelancer/sqlite"
+	"Timelancer/sqlite/vtc"
 )
 
 type Field struct {
-	Name      string            `json:"name"`
-	Value     interface{}       `json:"value"`
-	ValueType sqlite.ValueType  `json:"type"`
+	Name      string        `json:"name"`
+	Value     interface{}   `json:"value"`
+	ValueType vtc.ValueType `json:"type"`
 }
-
 
 func New(name string) *Field {
 	if name := strings.TrimSpace(name); name != "" {
-		return &Field{Name:name}
+		return &Field{Name: name}
 	}
 	return nil
 }
@@ -63,7 +62,7 @@ func (f *Field) Valid() bool {
 		return false
 	}
 	switch f.ValueType {
-	case sqlite.Text, sqlite.Int, sqlite.Float, sqlite.Blob, sqlite.Null:
+	case vtc.Text, vtc.Int, vtc.Float, vtc.Blob, vtc.Null:
 		return true
 	default:
 		return false
@@ -75,16 +74,16 @@ func (f *Field) SetValue(v interface{}) *Field {
 
 	switch v.(type) {
 	case string:
-		f.ValueType = sqlite.Text
+		f.ValueType = vtc.Text
 	case int64:
-		f.ValueType = sqlite.Int
+		f.ValueType = vtc.Int
 	case float32:
 		f.Value = float64(v.(float32))
-		f.ValueType = sqlite.Float
+		f.ValueType = vtc.Float
 	case float64:
-		f.ValueType = sqlite.Float
+		f.ValueType = vtc.Float
 	case []byte:
-		f.ValueType = sqlite.Blob
+		f.ValueType = vtc.Blob
 	case bool:
 		v := v.(bool)
 		if v == true {
@@ -92,9 +91,9 @@ func (f *Field) SetValue(v interface{}) *Field {
 		} else {
 			f.Value = 0
 		}
-		f.ValueType = sqlite.Int
+		f.ValueType = vtc.Int
 	default:
-		f.ValueType = sqlite.Null
+		f.ValueType = vtc.Null
 	}
 	return f
 }
@@ -163,5 +162,3 @@ func (f *Field) Bool() bool {
 	}
 	return false
 }
-
-

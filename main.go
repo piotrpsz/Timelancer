@@ -30,7 +30,10 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 
+	"Timelancer/dbf"
+	"Timelancer/shared"
 	"Timelancer/shared/tr"
 	"Timelancer/window"
 	"github.com/gotk3/gotk3/glib"
@@ -42,22 +45,32 @@ const (
 )
 
 func main() {
-	if app, err := gtk.ApplicationNew(appID, glib.APPLICATION_FLAGS_NONE); tr.IsOK(err) {
-		app.Connect("activate", func() {
-			tr.Init()
-			if win := window.New(app); win != nil {
-				quitAction := glib.SimpleActionNew("quit", nil)
-				quitAction.Connect("activate", func() {
-					tr.Cancel()
-					app.Quit()
-				})
-				app.AddAction(quitAction)
+	if openDatabase() {
+		if app, err := gtk.ApplicationNew(appID, glib.APPLICATION_FLAGS_NONE); tr.IsOK(err) {
+			app.Connect("activate", func() {
+				tr.Init()
+				if win := window.New(app); win != nil {
+					quitAction := glib.SimpleActionNew("quit", nil)
+					quitAction.Connect("activate", func() {
+						tr.Cancel()
+						app.Quit()
+					})
+					app.AddAction(quitAction)
 
-				win.ShowAll()
-			}
-		})
-		retv := app.Run(os.Args)
-		os.Exit(retv)
+					win.ShowAll()
+				}
+			})
+			retv := app.Run(os.Args)
+			os.Exit(retv)
+		}
 	}
 	os.Exit(1)
+}
+
+func openDatabase() bool {
+	if dataDir := shared.AppDir(); dataDir != "" {
+		filePath := filepath.Join(dataDir, shared.AppName+".sqlite")
+		return dbf.OpenOrCreate(filePath)
+	}
+	return false
 }

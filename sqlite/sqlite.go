@@ -41,19 +41,27 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"sync"
 	"unsafe"
 
 	"Timelancer/shared/tr"
+	"Timelancer/sqlite/vtc"
 )
 
 type Database struct {
-	ptr  *C.sqlite3
-	stmt *C.sqlite3_stmt
+	ptr   *C.sqlite3
+	stmt  *C.sqlite3_stmt
 	fpath string
 }
 
-func New(fpath string) *Database {
-	return &Database{fpath:fpath}
+var instance *Database
+var once sync.Once
+
+func SQLite() *Database {
+	once.Do(func() {
+		instance = &Database{}
+	})
+	return instance
 }
 
 func (db *Database) Version() string {
@@ -68,44 +76,46 @@ func (db *Database) ErrorString() string {
 	return C.GoString(C.sqlite3_errmsg(db.ptr))
 }
 
-func (db *Database) Open() bool {
+func (db *Database) Open(filePath string) bool {
 	if db.ptr != nil {
 		log.Println("database is already opened")
 		return false
 	}
 
-	if !db.exists() {
+	if !databaseExists(filePath) {
 		return false
 	}
 
-	cstr := C.CString(db.fpath)
+	cstr := C.CString(filePath)
 	defer C.free(unsafe.Pointer(cstr))
 
 	C.sqlite3_initialize()
 	if C.sqlite3_open_v2(cstr, &db.ptr, C.SQLITE_OPEN_READWRITE, nil) == C.SQLITE_OK {
+		db.fpath = filePath
 		return true
 	}
 	db.checkError()
 	return false
 }
 
-func (db *Database) Create(scheme string) bool {
+func (db *Database) Create(filePath, scheme string) bool {
 	if db.ptr != nil {
 		log.Println("database is already opened")
 		return false
 	}
 
-	if db.exists() {
+	if databaseExists(filePath) {
 		log.Println("database already exists")
 		return false
 	}
 
-	cstr := C.CString(db.fpath)
+	cstr := C.CString(filePath)
 	defer C.free(unsafe.Pointer(cstr))
 
 	C.sqlite3_initialize()
 	if C.sqlite3_open_v2(cstr, &db.ptr, C.SQLITE_OPEN_READWRITE|C.SQLITE_OPEN_CREATE, nil) == C.SQLITE_OK {
 		if db.ExecQuery(scheme) {
+			db.fpath = filePath
 			return true
 		}
 	}
@@ -174,17 +184,17 @@ func (db *Database) DefaultPragmas() bool {
 *                                                                   *
 ********************************************************************/
 
-func (db *Database) exists() bool {
-	f, err := os.Open(db.fpath)
+func databaseExists(filePath string) bool {
+	f, err := os.Open(filePath)
 	if err != nil {
 		return false
 	}
 	defer f.Close()
 
-	nbytes := len(databaseHeader)
+	nbytes := len(vtc.DatabaseHeader)
 	data := make([]byte, nbytes)
 	if count, err := f.Read(data); tr.IsOK(err) && count == nbytes {
-		return subtle.ConstantTimeCompare(databaseHeader, data) == 1
+		return subtle.ConstantTimeCompare(vtc.DatabaseHeader, data) == 1
 	}
 
 	return true

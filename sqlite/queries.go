@@ -35,6 +35,7 @@ import (
 	"Timelancer/shared/tr"
 	"Timelancer/sqlite/field"
 	"Timelancer/sqlite/row"
+	"Timelancer/sqlite/vtc"
 )
 
 func (db *Database) Select(query string) row.Result {
@@ -46,7 +47,7 @@ func (db *Database) Select(query string) row.Result {
 		}
 	}
 
-	if err := db.ErrorCode(); err != StatusDone && err != Ok {
+	if err := db.ErrorCode(); err != vtc.StatusDone && err != vtc.Ok {
 		db.checkError()
 	}
 	return nil
@@ -74,7 +75,7 @@ func (db *Database) Insert(table string, fields []*field.Field) (int, bool) {
 		defer db.finalize()
 
 		db.bindFields(fields)
-		if retv := db.step(); retv == Ok || retv == StatusDone {
+		if retv := db.step(); retv == vtc.Ok || retv == vtc.StatusDone {
 			return db.LastInsertedRowID(), true
 		}
 	}
@@ -102,7 +103,7 @@ func (db *Database) Update(table string, fields []*field.Field) bool {
 			defer db.finalize()
 
 			db.bindFields(fields)
-			if retv := db.step(); retv == Ok || retv == StatusDone {
+			if retv := db.step(); retv == vtc.Ok || retv == vtc.StatusDone {
 				return true
 			}
 		}

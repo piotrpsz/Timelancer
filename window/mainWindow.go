@@ -35,6 +35,7 @@ import (
 	"time"
 
 	"Timelancer/dialog/alarm"
+	"Timelancer/dialog/company"
 	"Timelancer/shared"
 	"Timelancer/shared/tr"
 	"github.com/gotk3/gotk3/glib"
@@ -68,43 +69,42 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.`
 
-
 	dateFormat = "%04d-%02d-%02d  %s"
 	timeFormat = "<span font_desc='16' foreground='#AAA555'>%02d:%02d</span>" +
 		"<span font_desc='10' foreground='#AAA555'>.%02d</span>"
 
-	workTimeActiveFormat = "<span font_desc='18' foreground='#AAA555'>%02d:%02d:%02d</span>"
+	workTimeActiveFormat   = "<span font_desc='18' foreground='#AAA555'>%02d:%02d:%02d</span>"
 	workTimeInactiveFormat = "<span font_desc='18' foreground='#999999'>%02d:%02d:%02d</span>"
 
-	alarmAfterActiveFormat = "<span font_desc='18' foreground='#AAA555'>%02d:%02d:%02d</span>"
+	alarmAfterActiveFormat   = "<span font_desc='18' foreground='#AAA555'>%02d:%02d:%02d</span>"
 	alarmAfterInactiveFormat = "<span font_desc='18' foreground='#999999'>%02d:%02d:%02d</span>"
 )
 
 type MainWindow struct {
-	app                   *gtk.Application
-	win                   *gtk.ApplicationWindow
-	timeLabel             *gtk.Label
-	headerBar             *gtk.HeaderBar
-	companyLabel          *gtk.Label
-	companyCombo          *gtk.ComboBoxText
-	companyAddBtn         *gtk.Button
-	timerLabel            *gtk.Label
-	timerValue            *gtk.Label
-	timerStartBtn         *gtk.Button
-	timerStopBtn          *gtk.Button
-	alarmAfterLabel       *gtk.Label
-	alarmAfterValue       *gtk.Label
-	alarmAfterStartBtn    *gtk.Button
-	alarmAfterSetBtn      *gtk.Button
-	alarmAfterStopBtn     *gtk.Button
-	alarmAtLabel          *gtk.Label
-	alarmAtValue          *gtk.Label
-	alarmAtStartBtn       *gtk.Button
-	alarmAtSetBtn         *gtk.Button
-	alarmAtStopBtn        *gtk.Button
+	app                *gtk.Application
+	win                *gtk.ApplicationWindow
+	timeLabel          *gtk.Label
+	headerBar          *gtk.HeaderBar
+	companyLabel       *gtk.Label
+	companyCombo       *gtk.ComboBoxText
+	companyAddBtn      *gtk.Button
+	timerLabel         *gtk.Label
+	timerValue         *gtk.Label
+	timerStartBtn      *gtk.Button
+	timerStopBtn       *gtk.Button
+	alarmAfterLabel    *gtk.Label
+	alarmAfterValue    *gtk.Label
+	alarmAfterStartBtn *gtk.Button
+	alarmAfterSetBtn   *gtk.Button
+	alarmAfterStopBtn  *gtk.Button
+	alarmAtLabel       *gtk.Label
+	alarmAtValue       *gtk.Label
+	alarmAtStartBtn    *gtk.Button
+	alarmAtSetBtn      *gtk.Button
+	alarmAtStopBtn     *gtk.Button
 
-	wg                    sync.WaitGroup
-	cancel                context.CancelFunc
+	wg     sync.WaitGroup
+	cancel context.CancelFunc
 
 	workTimeStart         time.Time
 	workTimeRunned        bool
@@ -118,8 +118,8 @@ type MainWindow struct {
 
 func New(app *gtk.Application) *MainWindow {
 	if win, err := gtk.ApplicationWindowNew(app); tr.IsOK(err) {
-		mw := &MainWindow{app:app, win:win}
-		if mw.setupHeaderBar() && mw.setupMenu() && mw.setupContent(){
+		mw := &MainWindow{app: app, win: win}
+		if mw.setupHeaderBar() && mw.setupMenu() && mw.setupContent() {
 			ctx, cancel := context.WithCancel(context.Background())
 			mw.cancel = cancel
 			ticker := time.NewTicker(1 * time.Second)
@@ -224,9 +224,10 @@ func (mw *MainWindow) createCompanyWidgets(grid *gtk.Grid) bool {
 			if mw.companyAddBtn, err = gtk.ButtonNewWithLabel("Add"); tr.IsOK(err) {
 				mw.companyLabel.SetHAlign(gtk.ALIGN_END)
 				mw.companyAddBtn.SetTooltipText("Add new company")
+				mw.companyAddBtn.Connect("clicked", mw.addCompanyHandler)
 
-				grid.Attach(mw.companyLabel,  0, 0, 1, 1)
-				grid.Attach(mw.companyCombo,  1, 0, 3, 1)
+				grid.Attach(mw.companyLabel, 0, 0, 1, 1)
+				grid.Attach(mw.companyCombo, 1, 0, 3, 1)
 				grid.Attach(mw.companyAddBtn, 4, 0, 1, 1)
 
 				mw.populateCompanyCombo(mw.companyCombo)
@@ -308,11 +309,11 @@ func (mw *MainWindow) createAlarmAfterWidgets(grid *gtk.Grid) bool {
 						separator, _ := gtk.SeparatorNew(gtk.ORIENTATION_HORIZONTAL)
 						grid.Attach(separator, 0, 2, 5, 1)
 
-						grid.Attach(mw.alarmAfterLabel,    0, 3, 1, 1)
-						grid.Attach(mw.alarmAfterValue,    1, 3, 1, 1)
+						grid.Attach(mw.alarmAfterLabel, 0, 3, 1, 1)
+						grid.Attach(mw.alarmAfterValue, 1, 3, 1, 1)
 						grid.Attach(mw.alarmAfterStartBtn, 2, 3, 1, 1)
-						grid.Attach(mw.alarmAfterSetBtn,   3, 3, 1, 1)
-						grid.Attach(mw.alarmAfterStopBtn,  4, 3, 1, 1)
+						grid.Attach(mw.alarmAfterSetBtn, 3, 3, 1, 1)
+						grid.Attach(mw.alarmAfterStopBtn, 4, 3, 1, 1)
 
 						return true
 					}
@@ -335,7 +336,6 @@ func (mw *MainWindow) createAlarmAtWidgets(grid *gtk.Grid) bool {
 						mw.alarmAtStopBtn.SetSensitive(false)
 						mw.alarmAtStartBtn.SetSensitive(false)
 
-
 						mw.alarmAtLabel.SetHAlign(gtk.ALIGN_END)
 						mw.alarmAtValue.SetHAlign(gtk.ALIGN_START)
 						mw.alarmAtStartBtn.SetTooltipText("Start the timer")
@@ -346,11 +346,11 @@ func (mw *MainWindow) createAlarmAtWidgets(grid *gtk.Grid) bool {
 						mw.alarmAtStartBtn.Connect("clicked", mw.alarmAtStartHandler)
 						mw.alarmAtStopBtn.Connect("clicked", mw.alarmAtStopHandler)
 
-						grid.Attach(mw.alarmAtLabel,    0, 4, 1, 1)
-						grid.Attach(mw.alarmAtValue,    1, 4, 1, 1)
+						grid.Attach(mw.alarmAtLabel, 0, 4, 1, 1)
+						grid.Attach(mw.alarmAtValue, 1, 4, 1, 1)
 						grid.Attach(mw.alarmAtStartBtn, 2, 4, 1, 1)
-						grid.Attach(mw.alarmAtSetBtn,   3, 4, 1, 1)
-						grid.Attach(mw.alarmAtStopBtn,  4, 4, 1, 1)
+						grid.Attach(mw.alarmAtSetBtn, 3, 4, 1, 1)
+						grid.Attach(mw.alarmAtStopBtn, 4, 4, 1, 1)
 
 						return true
 					}
@@ -366,22 +366,22 @@ func (mw *MainWindow) timeHandler(ctx context.Context, wg *sync.WaitGroup, ticke
 
 	for {
 		select {
-			case <-ctx.Done():
-				ticker.Stop()
-				return
-			case t := <-ticker.C:
-				mw.updateCurrentTime(t)
-				if mw.workTimeRunned {
-					sub := t.Sub(mw.workTimeStart)
-					mw.updateWorkTime(uint(sub.Seconds()))
-				}
-				if mw.alarmAfterRunned {
-					mw.alarmAfterDuration -= 1
-					mw.updateAlarmAfter(mw.alarmAfterDuration)
-				}
-				if mw.alarmAtRunned {
-					mw.updateAlarmAt(t)
-				}
+		case <-ctx.Done():
+			ticker.Stop()
+			return
+		case t := <-ticker.C:
+			mw.updateCurrentTime(t)
+			if mw.workTimeRunned {
+				sub := t.Sub(mw.workTimeStart)
+				mw.updateWorkTime(uint(sub.Seconds()))
+			}
+			if mw.alarmAfterRunned {
+				mw.alarmAfterDuration -= 1
+				mw.updateAlarmAfter(mw.alarmAfterDuration)
+			}
+			if mw.alarmAtRunned {
+				mw.updateAlarmAt(t)
+			}
 		}
 	}
 }
@@ -397,7 +397,7 @@ func (mw *MainWindow) updateCurrentTime(t time.Time) {
 }
 
 func (mw *MainWindow) updateWorkTime(duration uint) {
-	h, m, s  := durationComponents(duration)
+	h, m, s := durationComponents(duration)
 
 	glib.IdleAdd(func() {
 		if mw.workTimeRunned {
@@ -414,7 +414,7 @@ func (mw *MainWindow) updateAlarmAfter(duration uint) {
 		return
 	}
 
-	h, m, s  := durationComponents(duration)
+	h, m, s := durationComponents(duration)
 	glib.IdleAdd(func() {
 		if mw.alarmAfterRunned {
 			mw.alarmAfterValue.SetMarkup(fmt.Sprintf(alarmAfterActiveFormat, h, m, s))
@@ -461,7 +461,7 @@ func (mw *MainWindow) setAlarmAt() {
 }
 
 func durationComponents(duration uint) (uint, uint, uint) {
-	h, m, s  := uint(0), uint(0), uint(0)
+	h, m, s := uint(0), uint(0), uint(0)
 
 	if duration > 0 {
 		s = duration % 60
@@ -472,7 +472,7 @@ func durationComponents(duration uint) (uint, uint, uint) {
 		}
 	}
 
-	return 	h, m, s
+	return h, m, s
 }
 
 func (mw *MainWindow) alarmAfterStartHandler() {
@@ -481,6 +481,15 @@ func (mw *MainWindow) alarmAfterStartHandler() {
 	mw.alarmAfterSetBtn.SetSensitive(false)
 	mw.alarmAfterStartBtn.SetSensitive(false)
 	mw.alarmAfterRunned = true
+}
+
+func (mw *MainWindow) addCompanyHandler() {
+	if dialog := company.New(mw.app, nil); dialog != nil {
+		defer dialog.Destroy()
+
+		dialog.ShowAll()
+		dialog.Run()
+	}
 }
 
 func (mw *MainWindow) alarmAfterSetHandler() {

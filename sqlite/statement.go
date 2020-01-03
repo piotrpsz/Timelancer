@@ -49,6 +49,7 @@ import (
 	"Timelancer/shared/tr"
 	"Timelancer/sqlite/field"
 	"Timelancer/sqlite/row"
+	"Timelancer/sqlite/vtc"
 )
 
 func (db *Database) step() int {
@@ -81,19 +82,19 @@ func (db *Database) finalize() {
 	db.checkError()
 }
 
-func (db *Database) columnType(idx int) ValueType {
+func (db *Database) columnType(idx int) vtc.ValueType {
 	ct := C.sqlite3_column_type(db.stmt, C.int(idx))
 	switch ct {
 	case C.SQLITE_INTEGER:
-		return Int
+		return vtc.Int
 	case C.SQLITE_FLOAT:
-		return Float
+		return vtc.Float
 	case C.SQLITE_TEXT:
-		return Text
+		return vtc.Text
 	case C.SQLITE_BLOB:
-		return Blob
+		return vtc.Blob
 	}
-	return Null
+	return vtc.Null
 }
 
 func (db *Database) columnCount() int {
@@ -114,21 +115,21 @@ func (db *Database) bindFields(fields []*field.Field) {
 	for _, f := range fields {
 		columnIndex := db.columnIndex(":" + f.Name)
 		switch f.ValueType {
-		case Null:
+		case vtc.Null:
 			db.bindNull(columnIndex)
-		case Int:
+		case vtc.Int:
 			if value, err := f.Int64(); tr.IsOK(err) {
 				db.bindInt(columnIndex, value)
 			}
-		case Float:
+		case vtc.Float:
 			if value, err := f.Float64(); tr.IsOK(err) {
 				db.bindFloat(columnIndex, value)
 			}
-		case Text:
+		case vtc.Text:
 			if value, err := f.Text(); tr.IsOK(err) {
 				db.bindText(columnIndex, value)
 			}
-		case Blob:
+		case vtc.Blob:
 			if value, err := f.Blob(); tr.IsOK(err) {
 				db.bindBlob(columnIndex, value)
 			}
@@ -141,20 +142,20 @@ func (db *Database) fetchResult() row.Result {
 
 	n := db.columnCount()
 	if n > 0 {
-		for db.step() == StatusRow {
+		for db.step() == vtc.StatusRow {
 			oneRow := row.New()
 			for i := 0; i < n; i++ {
 				f := field.New(db.columnName(i))
 				switch db.columnType(i) {
-				case Null:
+				case vtc.Null:
 					f.SetValue(nil)
-				case Int:
+				case vtc.Int:
 					f.SetValue(db.fetchInt(i))
-				case Float:
+				case vtc.Float:
 					f.SetValue(db.fetchFloat(i))
-				case Text:
+				case vtc.Text:
 					f.SetValue(db.fetchText(i))
-				case Blob:
+				case vtc.Blob:
 					f.SetValue(db.fetchBlob(i))
 				}
 				oneRow.Append(f)
