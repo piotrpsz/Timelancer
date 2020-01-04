@@ -130,3 +130,15 @@ func (db *Database) Count(table string) int {
 	}
 	return -1
 }
+
+func (db *Database) CountWhereInt(table string, field string, value int) int {
+	query := fmt.Sprintf("SELECT COUNT(*) as count FROM %s WHERE %s=%d", table, field, value)
+	if result := db.Select(query); len(result) == 1 {
+		if f := result[0].Field("count"); f != nil {
+			if n, err := f.Int64(); tr.IsOK(err) {
+				return n
+			}
+		}
+	}
+	return 0
+}

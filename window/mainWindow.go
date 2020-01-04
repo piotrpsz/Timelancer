@@ -130,6 +130,8 @@ func New(app *gtk.Application) *MainWindow {
 			mw.resetAlarmAt()
 			mw.selectedCompanyChanged()
 
+			mw.companyCombo.Connect("changed", mw.selectedCompanyChanged)
+
 			mw.wg.Add(1)
 			go mw.timeHandler(ctx, &mw.wg, ticker)
 
@@ -224,13 +226,14 @@ func (mw *MainWindow) createCompanyWidgets(grid *gtk.Grid) bool {
 			if mw.companyAddBtn, err = gtk.ButtonNewWithLabel("Add"); tr.IsOK(err) {
 				mw.companyLabel.SetHAlign(gtk.ALIGN_END)
 				mw.companyAddBtn.SetTooltipText("Add new company")
+
 				mw.companyAddBtn.Connect("clicked", mw.addCompanyHandler)
 
 				grid.Attach(mw.companyLabel, 0, 0, 1, 1)
 				grid.Attach(mw.companyCombo, 1, 0, 3, 1)
 				grid.Attach(mw.companyAddBtn, 4, 0, 1, 1)
 
-				mw.populateCompanyCombo(mw.companyCombo)
+				mw.populateCompanyCombo()
 				return true
 			}
 		}
@@ -488,7 +491,16 @@ func (mw *MainWindow) addCompanyHandler() {
 		defer dialog.Destroy()
 
 		dialog.ShowAll()
-		dialog.Run()
+		if dialog.Run() == gtk.RESPONSE_OK {
+			if c := dialog.Company(); c != nil && c.Valid() {
+				if c.Save() {
+					mw.populateCompanyCombo()
+					mw.selectCompanyWithID(c.ID())
+					return
+				}
+				tr.Error("can't save the company data")
+			}
+		}
 	}
 }
 

@@ -26,6 +26,7 @@
         <method importPath="github.com/gotk3/gotk3/gtk" receiver="*Button" name="Connect" />
         <method importPath="github.com/gotk3/gotk3/gtk" receiver="*ComboBoxText" name="Connect" />
         <method importPath="os" receiver="*File" name="Close" />
+        <method importPath="github.com/gotk3/gotk3/gtk" receiver="*CheckButton" name="Connect" />
       </methods>
     </inspection_tool>
     <inspection_tool class="SpellCheckingInspection" enabled="false" level="TYPO" enabled_by_default="false">

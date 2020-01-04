@@ -29,17 +29,32 @@
 package window
 
 import (
-	"github.com/gotk3/gotk3/gtk"
+	"Timelancer/model/company"
+	"Timelancer/shared/tr"
 )
 
-func (mw *MainWindow) populateCompanyCombo(combo *gtk.ComboBoxText) {
-	combo.AppendText("Select a company")
-	combo.SetActive(0)
+var companiesData []*company.Company
 
-	combo.AppendText("Beesoft Software")
-	combo.AppendText("Mobile Software Lab")
+func (mw *MainWindow) populateCompanyCombo() {
+	mw.companyCombo.RemoveAll()
+	mw.companyCombo.AppendText("Select a company")
+	mw.companyCombo.SetActive(0)
 
-	combo.Connect("changed", mw.selectedCompanyChanged)
+	companiesData = company.CompaniesInUse()
+	for _, c := range companiesData {
+		mw.companyCombo.AppendText(c.Name())
+	}
+}
+
+func (mw *MainWindow) selectCompanyWithID(id int) bool {
+	for index, c := range companiesData {
+		if c.ID() == id {
+			mw.companyCombo.SetActive(index + 1)
+			return true
+		}
+	}
+	tr.Error("unknown company for id = %d", id)
+	return false
 }
 
 func (mw *MainWindow) selectedCompanyChanged() {

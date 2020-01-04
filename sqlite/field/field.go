@@ -32,7 +32,6 @@ import (
 	"errors"
 	"strings"
 
-	"Timelancer/shared/tr"
 	"Timelancer/sqlite/vtc"
 )
 
@@ -87,9 +86,9 @@ func (f *Field) SetValue(v interface{}) *Field {
 	case bool:
 		v := v.(bool)
 		if v == true {
-			f.Value = 1
+			f.Value = int64(1)
 		} else {
-			f.Value = 0
+			f.Value = int64(0)
 		}
 		f.ValueType = vtc.Int
 	default:
@@ -154,11 +153,14 @@ func (f *Field) Blob() ([]byte, error) {
 	return nil, errors.New("can't convert field value to []byte")
 }
 
-func (f *Field) Bool() bool {
-	if v, err := f.Int64(); tr.IsOK(err) {
-		if v == 1 {
-			return true
-		}
+func (f *Field) Bool() (bool, error) {
+	v, err := f.Int64()
+	if err != nil {
+		return false, err
 	}
-	return false
+
+	if v == 1 {
+		return true, nil
+	}
+	return false, nil
 }

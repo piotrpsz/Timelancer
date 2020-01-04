@@ -178,7 +178,7 @@ func (db *Database) bindNull(colIndex int) int {
 }
 
 func (db *Database) bindInt(colIndex int, v int) int {
-	return int(C.sqlite3_bind_int64(db.stmt, C.int(colIndex), C.sqlite3_int64(v)))
+	return int(C.sqlite3_bind_int64(db.stmt, C.int(colIndex), C.sqlite3_int64(int64(v))))
 }
 
 func (db *Database) bindFloat(colIndex int, v float64) int {
