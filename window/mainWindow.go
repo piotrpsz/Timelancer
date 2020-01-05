@@ -35,6 +35,7 @@ import (
 	"time"
 
 	"Timelancer/dialog/alarm"
+	"Timelancer/dialog/companies"
 	"Timelancer/dialog/company"
 	"Timelancer/shared"
 	"Timelancer/shared/tr"
@@ -172,6 +173,9 @@ func (mw *MainWindow) setupMenu() bool {
 			menu.Append("about...", "custom.about")
 			menu.Append("quit", "custom.quit")
 
+			companiesAction := glib.SimpleActionNew("companies", nil)
+			companiesAction.Connect("activate", mw.companiesActionHandler)
+
 			settingsAction := glib.SimpleActionNew("settings", nil)
 			settingsAction.Connect("activate", func() {
 				fmt.Println("Settings...")
@@ -187,6 +191,7 @@ func (mw *MainWindow) setupMenu() bool {
 			})
 
 			customGroup := glib.SimpleActionGroupNew()
+			customGroup.AddAction(companiesAction)
 			customGroup.AddAction(settingsAction)
 			customGroup.AddAction(aboutAction)
 			customGroup.AddAction(quitAction)
@@ -583,6 +588,16 @@ func (mw *MainWindow) alarmAtStopHandler() {
 		mw.alarmAtStartBtn.SetSensitive(false)
 		mw.resetAlarmAt()
 	})
+}
+
+func (mw *MainWindow) companiesActionHandler() {
+	if dialog := companies.New(mw.app); dialog != nil {
+		defer dialog.Destroy()
+
+		dialog.UpdateTable()
+		dialog.ShowAll()
+		dialog.Run()
+	}
 }
 
 func (mw *MainWindow) aboutActionHandler() {
