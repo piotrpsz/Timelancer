@@ -38,6 +38,7 @@ import (
 	"Timelancer/dialog/company"
 	"Timelancer/shared"
 	"Timelancer/shared/tr"
+	"Timelancer/sound"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 )
@@ -166,9 +167,10 @@ func (mw *MainWindow) setupHeaderBar() bool {
 func (mw *MainWindow) setupMenu() bool {
 	if menuButton, err := gtk.MenuButtonNew(); tr.IsOK(err) {
 		if menu := glib.MenuNew(); menu != nil {
-			menu.Append("Settings...", "custom.settings")
-			menu.Append("About...", "custom.about")
-			menu.Append("Quit", "custom.quit")
+			menu.Append("companies...", "custom.companies")
+			menu.Append("settings...", "custom.settings")
+			menu.Append("about...", "custom.about")
+			menu.Append("quit", "custom.quit")
 
 			settingsAction := glib.SimpleActionNew("settings", nil)
 			settingsAction.Connect("activate", func() {
@@ -414,6 +416,7 @@ func (mw *MainWindow) updateWorkTime(duration uint) {
 func (mw *MainWindow) updateAlarmAfter(duration uint) {
 	if duration <= 0 {
 		mw.alarmAfterStopHandler()
+		mw.alarmAtFinished()
 		return
 	}
 
@@ -423,6 +426,17 @@ func (mw *MainWindow) updateAlarmAfter(duration uint) {
 			mw.alarmAfterValue.SetMarkup(fmt.Sprintf(alarmAfterActiveFormat, h, m, s))
 		} else {
 			mw.alarmAfterValue.SetMarkup(fmt.Sprintf(alarmAfterInactiveFormat, h, m, s))
+		}
+	})
+}
+func (mw *MainWindow) alarmAtFinished() {
+	glib.IdleAdd(func() {
+		sound.PlayDrip(3)
+		if dialog := gtk.MessageDialogNew(mw.app.GetActiveWindow(), gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, ""); dialog != nil {
+			defer dialog.Destroy()
+			h, m, s := durationComponents(mw.alarmAfterDurationPrv)
+			dialog.FormatSecondaryText(fmt.Sprintf("Alarm after %d:%02d:%02d finished", h, m, s))
+			dialog.Run()
 		}
 	})
 }
@@ -555,11 +569,18 @@ func (mw *MainWindow) alarmAtSetHandler() {
 
 func (mw *MainWindow) alarmAtStopHandler() {
 	glib.IdleAdd(func() {
+		mw.alarmAtRunned = false
+		sound.PlayDrip(3)
+		if dialog := gtk.MessageDialogNew(mw.app.GetActiveWindow(), gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, ""); dialog != nil {
+			defer dialog.Destroy()
+			_, _, _, h, m, s := shared.DateTimeComponents(mw.alarmAt)
+			dialog.FormatSecondaryText(fmt.Sprintf("Alarm at  %d:%02d:%02d  finished", h, m, s))
+			dialog.Run()
+		}
 		mw.alarmAtLabel.SetSensitive(false)
 		mw.alarmAtStopBtn.SetSensitive(false)
 		mw.alarmAtSetBtn.SetSensitive(true)
 		mw.alarmAtStartBtn.SetSensitive(false)
-		mw.alarmAtRunned = false
 		mw.resetAlarmAt()
 	})
 }
