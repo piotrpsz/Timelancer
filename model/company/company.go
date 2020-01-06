@@ -29,6 +29,8 @@
 package company
 
 import (
+	"fmt"
+
 	"Timelancer/shared/tr"
 	"Timelancer/sqlite"
 	"Timelancer/sqlite/field"
@@ -179,6 +181,16 @@ func CompaniesInUse() []*Company {
 			if len(data) > 0 {
 				return data
 			}
+		}
+	}
+	return nil
+}
+
+func CompanyWithID(id int) *Company {
+	query := fmt.Sprintf("SELECT * FROM company WHERE id=%d", id)
+	if result := sqlite.SQLite().Select(query); len(result) == 1 {
+		if c := NewWithRow(result[0]); c != nil {
+			return c
 		}
 	}
 	return nil

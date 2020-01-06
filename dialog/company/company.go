@@ -59,9 +59,9 @@ type Dialog struct {
 	company       *company.Company
 }
 
-func New(app *gtk.Application, c *company.Company) *Dialog {
+func New(win *gtk.Window, c *company.Company) *Dialog {
 	if dialog, err := gtk.DialogNew(); tr.IsOK(err) {
-		dialog.SetTransientFor(app.GetActiveWindow())
+		dialog.SetTransientFor(win)
 		dialog.SetBorderWidth(6)
 		dialog.SetTitle(dialogTitle)
 		//dialog.SetSizeRequest(400, 200)

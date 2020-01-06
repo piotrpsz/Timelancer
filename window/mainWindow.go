@@ -506,7 +506,7 @@ func (mw *MainWindow) alarmAfterStartHandler() {
 }
 
 func (mw *MainWindow) addCompanyHandler() {
-	if dialog := company.New(mw.app, nil); dialog != nil {
+	if dialog := company.New(mw.app.GetActiveWindow(), nil); dialog != nil {
 		defer dialog.Destroy()
 
 		dialog.ShowAll()
@@ -591,7 +591,7 @@ func (mw *MainWindow) alarmAtStopHandler() {
 }
 
 func (mw *MainWindow) companiesActionHandler() {
-	if dialog := companies.New(mw.app); dialog != nil {
+	if dialog := companies.New(mw.app.GetActiveWindow()); dialog != nil {
 		defer dialog.Destroy()
 
 		dialog.UpdateTable()
