@@ -30,7 +30,7 @@ package companies
 
 import (
 	"fmt"
-	"reflect"
+	"strconv"
 
 	"Timelancer/dialog/company"
 	companyData "Timelancer/model/company"
@@ -200,10 +200,10 @@ func (d *Dialog) createTable() bool {
 
 func (d *Dialog) setupTreeView() (*gtk.TreeView, *gtk.ListStore) {
 	if treeView, err := gtk.TreeViewNew(); tr.IsOK(err) {
-		if idColumn := createTextColumn("id", idColumnIdx); idColumn != nil {
-			if shortcutColumn := createTextColumn("shortcut", shortcutColumnIdx); shortcutColumn != nil {
-				if nameColumn := createTextColumn("name", nameColumnIdx); nameColumn != nil {
-					if useColumn := createToggleColumn("in use", useColumnIdx); useColumn != nil {
+		if idColumn := d.createTextColumn("id", idColumnIdx); idColumn != nil {
+			if shortcutColumn := d.createTextColumn("shortcut", shortcutColumnIdx); shortcutColumn != nil {
+				if nameColumn := d.createTextColumn("name", nameColumnIdx); nameColumn != nil {
+					if useColumn := d.createToggleColumn("in use", useColumnIdx); useColumn != nil {
 						idColumn.SetVisible(false)
 
 						treeView.AppendColumn(idColumn)
@@ -231,7 +231,7 @@ func (d *Dialog) setupTreeView() (*gtk.TreeView, *gtk.ListStore) {
 	return nil, nil
 }
 
-func createTextColumn(title string, idx int) *gtk.TreeViewColumn {
+func (d *Dialog) createTextColumn(title string, idx int) *gtk.TreeViewColumn {
 	if cellRenderer, err := gtk.CellRendererTextNew(); tr.IsOK(err) {
 		if column, err := gtk.TreeViewColumnNewWithAttribute(title, cellRenderer, "text", idx); tr.IsOK(err) {
 			column.SetResizable(true)
@@ -241,24 +241,28 @@ func createTextColumn(title string, idx int) *gtk.TreeViewColumn {
 	return nil
 }
 
-func createToggleColumn(title string, idx int) *gtk.TreeViewColumn {
+func (d *Dialog) createToggleColumn(title string, idx int) *gtk.TreeViewColumn {
 	if renderer, err := gtk.CellRendererToggleNew(); tr.IsOK(err) {
 		renderer.SetActivatable(true)
-		renderer.Connect("toggled", func(p *gtk.CellRendererToggle, q string) {
-			fmt.Println(reflect.TypeOf(p), reflect.TypeOf(q))
-			fmt.Printf("%+v\n", p)
+		renderer.Connect("toggled", func(p *gtk.CellRendererToggle, rowAsString string) {
+			if row, err := strconv.Atoi(rowAsString); tr.IsOK(err) {
+				if path, err := gtk.TreePathNewFromIndicesv([]int{row}); tr.IsOK(err) {
+					if iter, err := d.listStore.GetIter(path); tr.IsOK(err) {
+						if value, err := d.listStore.GetValue(iter, useColumnIdx); tr.IsOK(err) {
+							if inUseInterface, err := value.GoValue(); tr.IsOK(err) {
+								if inUse, ok := inUseInterface.(bool); ok {
+									d.listStore.SetValue(iter, useColumnIdx, !inUse)
+									// TODO: update info in database
+								}
+							}
+						}
+					}
+				}
+			}
 		})
-		//renderer.SetActive(true)
 		if column, err := gtk.TreeViewColumnNewWithAttribute(title, renderer, "active", idx); tr.IsOK(err) {
 			return column
 		}
-		//if column, err := gtk.TreeViewColumnNew(); tr.IsOK(err) {
-		//	column.SetTitle("use")
-		//	column.SetFixedWidth(5)
-		//	column.SetSizing(gtk.TREE_VIEW_COLUMN_FIXED)
-		//	column.PackStart(renderer, true)
-		//	return column
-		//}
 	}
 	return nil
 }
