@@ -134,6 +134,11 @@ func (c *Company) Valid() bool {
 	return c.name != "" && c.shortcut != ""
 }
 
+func (c *Company) Remove() bool {
+	query := fmt.Sprintf("DELETE FROM company WHERE id=%d", c.id)
+	return sqlite.SQLite().ExecQuery(query)
+}
+
 func (c *Company) Save() bool {
 	if c.id == 0 {
 		return c.insert()

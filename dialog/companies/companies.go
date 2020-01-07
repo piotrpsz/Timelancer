@@ -152,6 +152,7 @@ func (d *Dialog) createButtons() *gtk.Box {
 						})
 						d.addBtn.Connect("clicked", d.addActionHandler)
 						d.editBtn.Connect("clicked", d.editActionHandler)
+						d.deleteBtn.Connect("clicked", d.deleteActionHandler)
 
 						return box
 					}
@@ -200,6 +201,18 @@ func (d *Dialog) editActionHandler() {
 					}
 				}
 				d.saveFailure()
+			}
+		}
+	}
+}
+
+/// Remove selected in table company from database and update table.
+func (d *Dialog) deleteActionHandler() {
+	// TODO: check if it is possible (maybe company was alrady used)
+	if iter := d.currentSelectionIter(); iter != nil {
+		if c := d.companyAtIter(iter); c != nil {
+			if c.Remove() {
+				d.listStore.Remove(iter)
 			}
 		}
 	}
@@ -320,9 +333,14 @@ func (d *Dialog) currentSelectionIter() *gtk.TreeIter {
 
 func (d *Dialog) selectedCompany() *companyData.Company {
 	if iter := d.currentSelectionIter(); iter != nil {
-		if id, ok := d.getID(iter); ok {
-			return companyData.CompanyWithID(id)
-		}
+		return d.companyAtIter(iter)
+	}
+	return nil
+}
+
+func (d *Dialog) companyAtIter(iter *gtk.TreeIter) *companyData.Company {
+	if id, ok := d.getID(iter); ok {
+		return companyData.CompanyWithID(id)
 	}
 	return nil
 }
