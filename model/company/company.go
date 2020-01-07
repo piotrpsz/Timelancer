@@ -55,7 +55,7 @@ type Company struct {
 }
 
 func New() *Company {
-	return &Company{id: 0, used: true}
+	return &Company{used: true}
 }
 
 func NewWithRow(r row.Row) *Company {

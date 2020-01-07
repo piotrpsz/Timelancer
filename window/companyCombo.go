@@ -30,7 +30,6 @@ package window
 
 import (
 	"Timelancer/model/company"
-	"Timelancer/shared/tr"
 )
 
 var companiesData []*company.Company
@@ -53,19 +52,20 @@ func (mw *MainWindow) selectCompanyWithID(id int) bool {
 			return true
 		}
 	}
-	tr.Error("unknown company for id = %d", id)
 	return false
 }
 
 func (mw *MainWindow) selectedCompanyChanged() {
 	mw.companyIndex = mw.companyCombo.GetActive()
 
-	if mw.companyIndex == -1 {
+	if mw.companyIndex == 0 || mw.companyIndex == -1 {
+		mw.companyLabel.SetSensitive(false)
 		mw.timerLabel.SetSensitive(false)
 		mw.timerValue.SetSensitive(false)
 		mw.timerStartBtn.SetSensitive(false)
 		mw.timerStopBtn.SetSensitive(false)
 	} else {
+		mw.companyLabel.SetSensitive(true)
 		mw.timerLabel.SetSensitive(true)
 		mw.timerValue.SetSensitive(true)
 		mw.timerStartBtn.SetSensitive(true)

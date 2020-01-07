@@ -169,12 +169,16 @@ func (mw *MainWindow) setupMenu() bool {
 	if menuButton, err := gtk.MenuButtonNew(); tr.IsOK(err) {
 		if menu := glib.MenuNew(); menu != nil {
 			menu.Append("companies...", "custom.companies")
+			menu.Append("working time statistic...", "custom.statistic")
 			menu.Append("settings...", "custom.settings")
 			menu.Append("about...", "custom.about")
 			menu.Append("quit", "custom.quit")
 
 			companiesAction := glib.SimpleActionNew("companies", nil)
 			companiesAction.Connect("activate", mw.companiesActionHandler)
+
+			statisticAction := glib.SimpleActionNew("statistic", nil)
+			statisticAction.Connect("activate", mw.statisticActionHandler)
 
 			settingsAction := glib.SimpleActionNew("settings", nil)
 			settingsAction.Connect("activate", func() {
@@ -192,6 +196,7 @@ func (mw *MainWindow) setupMenu() bool {
 
 			customGroup := glib.SimpleActionGroupNew()
 			customGroup.AddAction(companiesAction)
+			customGroup.AddAction(statisticAction)
 			customGroup.AddAction(settingsAction)
 			customGroup.AddAction(aboutAction)
 			customGroup.AddAction(quitAction)
@@ -598,6 +603,10 @@ func (mw *MainWindow) companiesActionHandler() {
 		dialog.ShowAll()
 		dialog.Run()
 	}
+}
+
+func (mw *MainWindow) statisticActionHandler() {
+	fmt.Println("statistic")
 }
 
 func (mw *MainWindow) aboutActionHandler() {
