@@ -111,7 +111,7 @@ func (d *Dialog) Destroy() {
 
 func (d *Dialog) UpdateTable() {
 	d.listStore.Clear()
-	if companiesData := companyData.CompaniesInUse(); len(companiesData) > 0 {
+	if companiesData := companyData.Companies(); len(companiesData) > 0 {
 		for _, c := range companiesData {
 			iter := d.listStore.Append()
 			d.listStore.SetValue(iter, idColumnIdx, c.ID())
@@ -248,11 +248,13 @@ func (d *Dialog) createToggleColumn(title string, idx int) *gtk.TreeViewColumn {
 			if row, err := strconv.Atoi(rowAsString); tr.IsOK(err) {
 				if path, err := gtk.TreePathNewFromIndicesv([]int{row}); tr.IsOK(err) {
 					if iter, err := d.listStore.GetIter(path); tr.IsOK(err) {
-						if value, err := d.listStore.GetValue(iter, useColumnIdx); tr.IsOK(err) {
-							if inUseInterface, err := value.GoValue(); tr.IsOK(err) {
-								if inUse, ok := inUseInterface.(bool); ok {
-									d.listStore.SetValue(iter, useColumnIdx, !inUse)
-									// TODO: update info in database
+						if id, ok := d.getID(iter); ok {
+							if use, ok := d.getUse(iter); ok {
+								if c := companyData.CompanyWithID(id); c != nil {
+									c.SetUsed(!use)
+									if c.Save() {
+										d.listStore.SetValue(iter, useColumnIdx, !use)
+									}
 								}
 							}
 						}
@@ -293,4 +295,26 @@ func (d *Dialog) selectedCompany() *companyData.Company {
 		}
 	}
 	return nil
+}
+
+func (d *Dialog) getID(iter *gtk.TreeIter) (int, bool) {
+	if value, err := d.listStore.GetValue(iter, idColumnIdx); tr.IsOK(err) {
+		if idValue, err := value.GoValue(); tr.IsOK(err) {
+			if id, ok := idValue.(int); ok {
+				return id, true
+			}
+		}
+	}
+	return -1, false
+}
+
+func (d *Dialog) getUse(iter *gtk.TreeIter) (bool, bool) {
+	if value, err := d.listStore.GetValue(iter, useColumnIdx); tr.IsOK(err) {
+		if useValue, err := value.GoValue(); tr.IsOK(err) {
+			if use, ok := useValue.(bool); ok {
+				return use, true
+			}
+		}
+	}
+	return false, false
 }

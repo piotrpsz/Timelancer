@@ -145,7 +145,7 @@ func (c *Company) fields() []*field.Field {
 	var data []*field.Field
 
 	if c.id > 0 {
-		data = append(data, field.NewWithValue("id", c.id))
+		data = append(data, field.NewWithValue("id", int64(c.id)))
 	}
 	data = append(data, field.NewWithValue("shortcut", c.shortcut))
 	data = append(data, field.NewWithValue("name", c.name))
@@ -172,6 +172,24 @@ func CompaniesInUse() []*Company {
 	if n := sqlite.SQLite().CountWhereInt("company", "used", 1); n > 0 {
 		var data []*Company
 		query := "SELECT * FROM company WHERE used=1 ORDER BY shortcut ASC"
+		if result := sqlite.SQLite().Select(query); len(result) > 0 {
+			for _, r := range result {
+				if c := NewWithRow(r); c != nil {
+					data = append(data, c)
+				}
+			}
+			if len(data) > 0 {
+				return data
+			}
+		}
+	}
+	return nil
+}
+
+func Companies() []*Company {
+	if n := sqlite.SQLite().CountWhereInt("company", "used", 1); n > 0 {
+		var data []*Company
+		query := "SELECT * FROM company ORDER BY shortcut ASC"
 		if result := sqlite.SQLite().Select(query); len(result) > 0 {
 			for _, r := range result {
 				if c := NewWithRow(r); c != nil {
