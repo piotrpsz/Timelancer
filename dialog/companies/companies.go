@@ -29,7 +29,6 @@
 package companies
 
 import (
-	"fmt"
 	"strconv"
 
 	"Timelancer/dialog/company"
@@ -113,14 +112,21 @@ func (d *Dialog) UpdateTable() {
 	d.listStore.Clear()
 	if companiesData := companyData.Companies(); len(companiesData) > 0 {
 		for _, c := range companiesData {
-			iter := d.listStore.Append()
-			d.listStore.SetValue(iter, idColumnIdx, c.ID())
-			d.listStore.SetValue(iter, shortcutColumnIdx, c.Shortcut())
-			d.listStore.SetValue(iter, nameColumnIdx, c.Name())
-			d.listStore.SetValue(iter, useColumnIdx, c.Used())
+			d.updateDataAtIter(d.listStore.Append(), c)
 		}
 	}
 	d.treeView.GrabFocus()
+	d.updateButtonStates()
+}
+
+func (d *Dialog) updateButtonStates() {
+	if _, ok := d.listStore.GetIterFirst(); ok {
+		d.deleteBtn.SetSensitive(true)
+		d.editBtn.SetSensitive(true)
+		return
+	}
+	d.deleteBtn.SetSensitive(false)
+	d.editBtn.SetSensitive(false)
 }
 
 func (d *Dialog) createButtons() *gtk.Box {
@@ -145,6 +151,7 @@ func (d *Dialog) createButtons() *gtk.Box {
 							d.self.Response(gtk.RESPONSE_OK)
 						})
 						d.addBtn.Connect("clicked", d.addActionHandler)
+						d.editBtn.Connect("clicked", d.editActionHandler)
 
 						return box
 					}
@@ -170,12 +177,35 @@ func (d *Dialog) addActionHandler() {
 			if c := dialog.Company(); c != nil && c.Valid() {
 				if c.Save() {
 					d.UpdateTable()
-					//mw.selectCompanyWithID(c.ID())
+					d.selectRowWithID(c.ID())
 					return
 				}
 			}
+			d.saveFailure()
 		}
 	}
+}
+
+func (d *Dialog) editActionHandler() {
+	if c := d.selectedCompany(); c != nil {
+		if dialog := company.New(&d.self.Window, c); dialog != nil {
+			defer dialog.Destroy()
+
+			dialog.ShowAll()
+			if dialog.Run() == gtk.RESPONSE_OK {
+				if c := dialog.Company(); c != nil && c.Valid() {
+					if c.Save() {
+						d.updateDataInSelectedRow(c)
+						return
+					}
+				}
+				d.saveFailure()
+			}
+		}
+	}
+}
+
+func (d *Dialog) saveFailure() {
 	if dialog := gtk.MessageDialogNew(&d.self.Window, gtk.DIALOG_MODAL, gtk.MESSAGE_ERROR, gtk.BUTTONS_CLOSE, "error"); dialog != nil {
 		defer dialog.Destroy()
 		dialog.FormatSecondaryText("can't save company data to database.")
@@ -274,24 +304,24 @@ func (d *Dialog) selectionChanged(s *gtk.TreeSelection) {
 		if path, ok := rows.Data().(*gtk.TreePath); ok {
 			if indices := path.GetIndices(); len(indices) > 0 {
 				d.selectedRow = indices[0]
-				fmt.Println(d.selectedRow)
 			}
 		}
 	}
-	c := d.selectedCompany()
-	fmt.Printf("%+v\n", c)
+}
+
+func (d *Dialog) currentSelectionIter() *gtk.TreeIter {
+	if selection, err := d.treeView.GetSelection(); tr.IsOK(err) {
+		if _, iter, ok := selection.GetSelected(); ok {
+			return iter
+		}
+	}
+	return nil
 }
 
 func (d *Dialog) selectedCompany() *companyData.Company {
-	if path, err := gtk.TreePathNewFromIndicesv([]int{d.selectedRow}); tr.IsOK(err) {
-		if iter, err := d.listStore.GetIter(path); tr.IsOK(err) {
-			if value, err := d.listStore.GetValue(iter, idColumnIdx); tr.IsOK(err) {
-				if idValue, err := value.GoValue(); tr.IsOK(err) {
-					if id, ok := idValue.(int); ok {
-						return companyData.CompanyWithID(id)
-					}
-				}
-			}
+	if iter := d.currentSelectionIter(); iter != nil {
+		if id, ok := d.getID(iter); ok {
+			return companyData.CompanyWithID(id)
 		}
 	}
 	return nil
@@ -317,4 +347,41 @@ func (d *Dialog) getUse(iter *gtk.TreeIter) (bool, bool) {
 		}
 	}
 	return false, false
+}
+
+func (d *Dialog) iterForID(id int) *gtk.TreeIter {
+	if iter, ok := d.listStore.GetIterFirst(); ok {
+		if v, ok := d.getID(iter); ok && v == id {
+			return iter
+		}
+		for {
+			if d.listStore.IterNext(iter) {
+				if v, ok := d.getID(iter); ok && v == id {
+					return iter
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (d *Dialog) selectRowWithID(id int) {
+	if iter := d.iterForID(id); iter != nil {
+		if selection, err := d.treeView.GetSelection(); tr.IsOK(err) {
+			selection.SelectIter(iter)
+		}
+	}
+}
+
+func (d *Dialog) updateDataInSelectedRow(c *companyData.Company) {
+	d.updateDataAtIter(d.currentSelectionIter(), c)
+}
+
+func (d *Dialog) updateDataAtIter(iter *gtk.TreeIter, c *companyData.Company) {
+	if iter != nil && c != nil {
+		d.listStore.SetValue(iter, idColumnIdx, c.ID())
+		d.listStore.SetValue(iter, shortcutColumnIdx, c.Shortcut())
+		d.listStore.SetValue(iter, nameColumnIdx, c.Name())
+		d.listStore.SetValue(iter, useColumnIdx, c.Used())
+	}
 }

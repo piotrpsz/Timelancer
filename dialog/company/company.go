@@ -95,6 +95,7 @@ func New(win *gtk.Window, c *company.Company) *Dialog {
 }
 
 func (d *Dialog) ShowAll() {
+	d.companyToWidgets()
 	d.self.ShowAll()
 	d.self.SetResizable(false)
 }
