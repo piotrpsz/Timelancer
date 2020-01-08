@@ -37,6 +37,7 @@ import (
 	"Timelancer/dialog/alarm"
 	"Timelancer/dialog/companies"
 	"Timelancer/dialog/company"
+	"Timelancer/dialog/statistic"
 	"Timelancer/shared"
 	"Timelancer/shared/tr"
 	"Timelancer/sound"
@@ -606,7 +607,12 @@ func (mw *MainWindow) companiesActionHandler() {
 }
 
 func (mw *MainWindow) statisticActionHandler() {
-	fmt.Println("statistic")
+	if dialog := statistic.New(mw.app.GetActiveWindow()); dialog != nil {
+		defer dialog.Destroy()
+
+		dialog.ShowAll()
+		dialog.Run()
+	}
 }
 
 func (mw *MainWindow) aboutActionHandler() {

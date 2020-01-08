@@ -41,7 +41,7 @@ import (
 
 const (
 	dialogTitle      = "all companies table"
-	cancelBtnText    = "cancel"
+	cancelBtnText    = "return"
 	addBtnText       = "add new"
 	editBtnText      = "edit"
 	deleteBtnText    = "remove"
