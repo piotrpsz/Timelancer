@@ -401,9 +401,7 @@ func (d *Dialog) selectRowWithID(id int) {
 func (d *Dialog) scrollToIter(iter *gtk.TreeIter) {
 	if model, err := d.treeView.GetModel(); tr.IsOK(err) {
 		if path, err := model.GetPath(iter); tr.IsOK(err) {
-			if column := d.treeView.GetColumn(nameColumnIdx); column != nil {
-				d.treeView.ScrollToCell(path, column, false, 0.0, 0.0)
-			}
+			d.treeView.ScrollToCell(path, nil, false, 0.0, 0.0)
 		}
 	}
 }
