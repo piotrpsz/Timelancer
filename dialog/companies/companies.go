@@ -62,6 +62,7 @@ type Dialog struct {
 	addBtn      *gtk.Button
 	editBtn     *gtk.Button
 	deleteBtn   *gtk.Button
+	scroll      *gtk.ScrolledWindow
 	treeView    *gtk.TreeView
 	listStore   *gtk.ListStore
 	parent      *gtk.Window
@@ -84,7 +85,7 @@ func New(parent *gtk.Window) *Dialog {
 
 						contentArea.PackEnd(buttonBox, false, false, 1)
 						contentArea.PackEnd(separator, true, false, 1)
-						contentArea.PackEnd(instance.treeView, true, true, 1)
+						contentArea.PackEnd(instance.scroll, true, true, 1)
 
 						return instance
 					}
@@ -233,10 +234,16 @@ func (d *Dialog) saveFailure() {
 ********************************************************************/
 
 func (d *Dialog) createTable() bool {
-	if treeView, listStore := d.setupTreeView(); treeView != nil {
-		d.treeView = treeView
-		d.listStore = listStore
-		return true
+	if scroll, err := gtk.ScrolledWindowNew(nil, nil); tr.IsOK(err) {
+		if treeView, listStore := d.setupTreeView(); treeView != nil {
+			d.scroll = scroll
+			d.treeView = treeView
+			d.listStore = listStore
+
+			d.scroll.SetSizeRequest(500, 250)
+			d.scroll.Add(d.treeView)
+			return true
+		}
 	}
 	return false
 }
@@ -253,11 +260,10 @@ func (d *Dialog) setupTreeView() (*gtk.TreeView, *gtk.ListStore) {
 						treeView.AppendColumn(shortcutColumn)
 						treeView.AppendColumn(nameColumn)
 						treeView.AppendColumn(useColumn)
-						//treeView.ColumnsAutosize()
+						treeView.ColumnsAutosize()
 
 						if listStore, err := gtk.ListStoreNew(glib.TYPE_INT, glib.TYPE_STRING, glib.TYPE_STRING, glib.TYPE_BOOLEAN); tr.IsOK(err) {
 							treeView.SetModel(listStore)
-							treeView.SetSizeRequest(500, 250)
 
 							if selection, err := treeView.GetSelection(); tr.IsOK(err) {
 								selection.SetMode(gtk.SELECTION_SINGLE)
@@ -387,6 +393,17 @@ func (d *Dialog) selectRowWithID(id int) {
 	if iter := d.iterForID(id); iter != nil {
 		if selection, err := d.treeView.GetSelection(); tr.IsOK(err) {
 			selection.SelectIter(iter)
+			d.scrollToIter(iter)
+		}
+	}
+}
+
+func (d *Dialog) scrollToIter(iter *gtk.TreeIter) {
+	if model, err := d.treeView.GetModel(); tr.IsOK(err) {
+		if path, err := model.GetPath(iter); tr.IsOK(err) {
+			if column := d.treeView.GetColumn(nameColumnIdx); column != nil {
+				d.treeView.ScrollToCell(path, column, false, 0.0, 0.0)
+			}
 		}
 	}
 }
