@@ -53,7 +53,7 @@ func (db *Database) Select(query string) row.Result {
 	return nil
 }
 
-func (db *Database) Insert(table string, fields []*field.Field) (int, bool) {
+func (db *Database) Insert(table string, fields []*field.Field) (int64, bool) {
 	if len(fields) == 0 {
 		return -1, false
 	}
@@ -118,7 +118,7 @@ func (db *Database) Delete(table, idColumnName string, idValue int) bool {
 	return db.ExecQuery(query)
 }
 
-func (db *Database) Count(table string) int {
+func (db *Database) Count(table string) int64 {
 	query := fmt.Sprintf("SELECT COUNT(*) as count FROM %s", table)
 
 	if result := db.Select(query); len(result) == 1 {
@@ -131,7 +131,7 @@ func (db *Database) Count(table string) int {
 	return -1
 }
 
-func (db *Database) CountWhereInt(table string, field string, value int) int {
+func (db *Database) CountWhereInt(table string, field string, value int) int64 {
 	query := fmt.Sprintf("SELECT COUNT(*) as count FROM %s WHERE %s=%d", table, field, value)
 	if result := db.Select(query); len(result) == 1 {
 		if f := result[0].Field("count"); f != nil {

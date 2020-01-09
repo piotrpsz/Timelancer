@@ -45,6 +45,15 @@ func (mw *MainWindow) populateCompanyCombo() {
 	}
 }
 
+func (mw *MainWindow) selectedCompanyID() int {
+	if row := mw.companyCombo.GetActive(); row != -1 {
+		if row > 0 {
+			return companiesData[row-1].ID()
+		}
+	}
+	return -1
+}
+
 func (mw *MainWindow) selectCompanyWithID(id int) bool {
 	for index, c := range companiesData {
 		if c.ID() == id {

@@ -38,6 +38,7 @@ import (
 	"Timelancer/dialog/companies"
 	"Timelancer/dialog/company"
 	"Timelancer/dialog/statistic"
+	"Timelancer/model/timer"
 	"Timelancer/shared"
 	"Timelancer/shared/tr"
 	"Timelancer/sound"
@@ -81,6 +82,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.`
 
 	alarmAfterActiveFormat   = "<span font_desc='18' foreground='#AAA555'>%02d:%02d:%02d</span>"
 	alarmAfterInactiveFormat = "<span font_desc='18' foreground='#999999'>%02d:%02d:%02d</span>"
+
+	// you worked %dh%2dmin.\nWould you like to save this information to database?
+
+	workedTimeFormat = "<span font_desc='12' foreground='#BBBBBBBB'>you worked </span>" +
+		"<span font_desc='16' foreground='#CCC777'> %d</span><span font_desc='10' foreground='#BBBBBBBB'>h </span>" +
+		"<span font_desc='16' foreground='#CCC777'>%02d</span><span font_desc='10' foreground='#BBBBBBBB'>min </span>" +
+		"<span font_desc='12' foreground='#BBBBBBBB'>\nwould you like to save this information to database?</span>"
 )
 
 type MainWindow struct {
@@ -109,6 +117,7 @@ type MainWindow struct {
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
+	lastTime              time.Time
 	workTimeStart         time.Time
 	workTimeRunned        bool
 	alarmAfterDuration    uint
@@ -139,7 +148,7 @@ func New(app *gtk.Application) *MainWindow {
 			go mw.timeHandler(ctx, &mw.wg, ticker)
 
 			win.SetPosition(gtk.WIN_POS_CENTER)
-			win.SetDefaultSize(400, 200)
+			//win.SetDefaultSize(400, 200)
 			return mw
 		}
 	}
@@ -278,12 +287,14 @@ func (mw *MainWindow) createTimerWidgets(grid *gtk.Grid) bool {
 						mw.workTimeRunned = true
 					})
 					mw.timerStopBtn.Connect("clicked", func() {
+						mw.workTimeRunned = false
+						mw.saveTimerAfterStopIfNeeded()
+
 						mw.companyCombo.SetSensitive(true)
 						mw.companyAddBtn.SetSensitive(true)
 						mw.timerLabel.SetSensitive(false)
 						mw.timerStopBtn.SetSensitive(false)
 						mw.timerStartBtn.SetSensitive(true)
-						mw.workTimeRunned = false
 						mw.updateWorkTime(uint(0))
 					})
 
@@ -388,6 +399,7 @@ func (mw *MainWindow) timeHandler(ctx context.Context, wg *sync.WaitGroup, ticke
 		case t := <-ticker.C:
 			mw.updateCurrentTime(t)
 			if mw.workTimeRunned {
+				mw.lastTime = t
 				sub := t.Sub(mw.workTimeStart)
 				mw.updateWorkTime(uint(sub.Seconds()))
 			}
@@ -400,6 +412,38 @@ func (mw *MainWindow) timeHandler(ctx context.Context, wg *sync.WaitGroup, ticke
 			}
 		}
 	}
+}
+
+func (mw *MainWindow) saveTimerAfterStopIfNeeded() {
+	if !mw.workTimeStart.IsZero() && mw.lastTime.After(mw.workTimeStart) {
+		duration := mw.lastTime.Sub(mw.workTimeStart)
+		sec := uint(duration.Seconds())
+		if sec > 5 /*(5 * 60)*/ { // we can save after 5 minutes
+			h, m, s := durationComponents(sec)
+			if s >= 30 {
+				m += 1
+				if m > 60 {
+					h += 1
+					m -= 60
+				}
+			}
+
+			if dialog := gtk.MessageDialogNew(mw.app.GetActiveWindow(), gtk.DIALOG_MODAL, gtk.MESSAGE_QUESTION, gtk.BUTTONS_YES_NO, "working time"); dialog != nil {
+				defer dialog.Destroy()
+
+				dialog.FormatSecondaryMarkup(workedTimeFormat, h, m)
+				if dialog.Run() == gtk.RESPONSE_YES {
+					if id := mw.selectedCompanyID(); id != -1 {
+						if timer.NewWithData(int64(id), mw.workTimeStart.Unix(), mw.lastTime.Unix()).Save() {
+							return
+						}
+					}
+				}
+			}
+
+		}
+	}
+	// TODO: not saved dialog
 }
 
 func (mw *MainWindow) updateCurrentTime(t time.Time) {
@@ -488,12 +532,12 @@ func (mw *MainWindow) setAlarmAt() {
 	})
 }
 
-func durationComponents(duration uint) (uint, uint, uint) {
+func durationComponents(seconds uint) (uint, uint, uint) {
 	h, m, s := uint(0), uint(0), uint(0)
 
-	if duration > 0 {
-		s = duration % 60
-		m = duration / 60
+	if seconds > 0 {
+		s = seconds % 60
+		m = seconds / 60
 		if m > 59 {
 			h = m / 60
 			m = m % 60

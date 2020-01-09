@@ -64,7 +64,7 @@ func NewWithRow(r row.Row) *Company {
 
 	if value, exists := r["id"]; exists {
 		if id, err := value.Int64(); tr.IsOK(err) {
-			c.id = id
+			c.id = int(id)
 			ok = true
 		}
 	}
@@ -162,7 +162,7 @@ func (c *Company) fields() []*field.Field {
 func (c *Company) insert() bool {
 	fields := c.fields()
 	if id, ok := sqlite.SQLite().Insert("company", fields); ok {
-		c.id = id
+		c.id = int(id)
 		return true
 	}
 	return false

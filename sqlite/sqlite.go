@@ -151,8 +151,8 @@ func (db *Database) ExecQuery(query string) bool {
 	return false
 }
 
-func (db *Database) LastInsertedRowID() int {
-	return int(C.sqlite3_last_insert_rowid(db.ptr))
+func (db *Database) LastInsertedRowID() int64 {
+	return int64(int(C.sqlite3_last_insert_rowid(db.ptr)))
 }
 
 func (db *Database) BeginTransaction() bool {

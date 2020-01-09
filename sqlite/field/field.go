@@ -97,9 +97,9 @@ func (f *Field) SetValue(v interface{}) *Field {
 	return f
 }
 
-func (f *Field) Int64() (int, error) {
+func (f *Field) Int64() (int64, error) {
 	if v, ok := f.Value.(int64); ok {
-		return int(v), nil
+		return v, nil
 	}
 	return 0, errors.New("can't convert field value to int64")
 }

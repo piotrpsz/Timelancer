@@ -177,7 +177,7 @@ func (db *Database) bindNull(colIndex int) int {
 	return int(C.sqlite3_bind_null(db.stmt, C.int(colIndex)))
 }
 
-func (db *Database) bindInt(colIndex int, v int) int {
+func (db *Database) bindInt(colIndex int, v int64) int {
 	return int(C.sqlite3_bind_int64(db.stmt, C.int(colIndex), C.sqlite3_int64(int64(v))))
 }
 

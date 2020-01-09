@@ -20,13 +20,13 @@ CREATE TABLE timer
 */
 
 type Timer struct {
-	id        int
-	companyID int
-	start     int
-	finish    int
+	id        int64
+	companyID int64
+	start     int64
+	finish    int64
 }
 
-func NewWithData(companyID, start, finish int) *Timer {
+func NewWithData(companyID, start, finish int64) *Timer {
 	return &Timer{companyID: companyID, start: start, finish: finish}
 }
 
@@ -36,7 +36,7 @@ func NewWithRow(r row.Row) *Timer {
 
 	if value, exists := r["id"]; exists {
 		if value, err := value.Int64(); tr.IsOK(err) {
-			tm.id = value
+			tm.id = int64(value)
 			ok = true
 		}
 	}
@@ -74,19 +74,19 @@ func NewWithRow(r row.Row) *Timer {
 	return nil
 }
 
-func (tm *Timer) ID() int {
+func (tm *Timer) ID() int64 {
 	return tm.id
 }
 
-func (tm *Timer) CompanyID() int {
+func (tm *Timer) CompanyID() int64 {
 	return tm.companyID
 }
 
-func (tm *Timer) Start() int {
+func (tm *Timer) Start() int64 {
 	return tm.start
 }
 
-func (tm *Timer) Finish() int {
+func (tm *Timer) Finish() int64 {
 	return tm.finish
 }
 
@@ -103,7 +103,7 @@ func (tm *Timer) Valid() bool {
 }
 
 func (tm *Timer) Remove() bool {
-	query := fmt.Sprintf("DELETE FROM company WHERE id=%d", tm.id)
+	query := fmt.Sprintf("DELETE FROM timer WHERE id=%d", tm.id)
 	return sqlite.SQLite().ExecQuery(query)
 }
 
@@ -129,7 +129,7 @@ func (tm *Timer) fields() []*field.Field {
 
 func (tm *Timer) insert() bool {
 	fields := tm.fields()
-	if id, ok := sqlite.SQLite().Insert("company", fields); ok {
+	if id, ok := sqlite.SQLite().Insert("timer", fields); ok {
 		tm.id = id
 		return true
 	}
@@ -138,5 +138,5 @@ func (tm *Timer) insert() bool {
 
 func (tm *Timer) update() bool {
 	fields := tm.fields()
-	return sqlite.SQLite().Update("company", fields)
+	return sqlite.SQLite().Update("timer", fields)
 }
