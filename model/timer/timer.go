@@ -2,7 +2,9 @@ package timer
 
 import (
 	"fmt"
+	"time"
 
+	"Timelancer/shared"
 	"Timelancer/shared/tr"
 	"Timelancer/sqlite"
 	"Timelancer/sqlite/field"
@@ -82,12 +84,18 @@ func (tm *Timer) CompanyID() int64 {
 	return tm.companyID
 }
 
-func (tm *Timer) Start() int64 {
-	return tm.start
+func (tm *Timer) Start() string {
+	if t := time.Unix(tm.start, 0); !t.IsZero() {
+		return shared.TimeAsString(t)
+	}
+	return ""
 }
 
-func (tm *Timer) Finish() int64 {
-	return tm.finish
+func (tm *Timer) Finish() string {
+	if t := time.Unix(tm.finish, 0); !t.IsZero() {
+		return shared.TimeAsString(t)
+	}
+	return ""
 }
 
 func (tm *Timer) StartAsString() string {

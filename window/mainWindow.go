@@ -419,7 +419,7 @@ func (mw *MainWindow) saveTimerAfterStopIfNeeded() {
 		duration := mw.lastTime.Sub(mw.workTimeStart)
 		sec := uint(duration.Seconds())
 		if sec > 5 /*(5 * 60)*/ { // we can save after 5 minutes
-			h, m, s := durationComponents(sec)
+			h, m, s := shared.DurationComponents(sec)
 			if s >= 30 {
 				m += 1
 				if m > 60 {
@@ -457,7 +457,7 @@ func (mw *MainWindow) updateCurrentTime(t time.Time) {
 }
 
 func (mw *MainWindow) updateWorkTime(duration uint) {
-	h, m, s := durationComponents(duration)
+	h, m, s := shared.DurationComponents(duration)
 
 	glib.IdleAdd(func() {
 		if mw.workTimeRunned {
@@ -475,7 +475,7 @@ func (mw *MainWindow) updateAlarmAfter(duration uint) {
 		return
 	}
 
-	h, m, s := durationComponents(duration)
+	h, m, s := shared.DurationComponents(duration)
 	glib.IdleAdd(func() {
 		if mw.alarmAfterRunned {
 			mw.alarmAfterValue.SetMarkup(fmt.Sprintf(alarmAfterActiveFormat, h, m, s))
@@ -489,7 +489,7 @@ func (mw *MainWindow) alarmAtFinished() {
 		sound.PlayDrip(3)
 		if dialog := gtk.MessageDialogNew(mw.app.GetActiveWindow(), gtk.DIALOG_MODAL, gtk.MESSAGE_INFO, gtk.BUTTONS_OK, ""); dialog != nil {
 			defer dialog.Destroy()
-			h, m, s := durationComponents(mw.alarmAfterDurationPrv)
+			h, m, s := shared.DurationComponents(mw.alarmAfterDurationPrv)
 			dialog.FormatSecondaryText(fmt.Sprintf("Alarm after %d:%02d:%02d finished", h, m, s))
 			dialog.Run()
 		}
@@ -530,21 +530,6 @@ func (mw *MainWindow) setAlarmAt() {
 	glib.IdleAdd(func() {
 		mw.alarmAtValue.SetMarkup(fmt.Sprintf(alarmAfterInactiveFormat, h, m, s))
 	})
-}
-
-func durationComponents(seconds uint) (uint, uint, uint) {
-	h, m, s := uint(0), uint(0), uint(0)
-
-	if seconds > 0 {
-		s = seconds % 60
-		m = seconds / 60
-		if m > 59 {
-			h = m / 60
-			m = m % 60
-		}
-	}
-
-	return h, m, s
 }
 
 func (mw *MainWindow) alarmAfterStartHandler() {

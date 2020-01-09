@@ -2,9 +2,13 @@ package statistic
 
 import (
 	"fmt"
+	"time"
 
 	"Timelancer/model/company"
+	"Timelancer/shared"
 	"Timelancer/shared/tr"
+	"Timelancer/sqlite"
+	"Timelancer/sqlite/row"
 	"github.com/gotk3/gotk3/glib"
 	"github.com/gotk3/gotk3/gtk"
 )
@@ -88,6 +92,7 @@ func New(parent *gtk.Window) *Dialog {
 func (d *Dialog) ShowAll() {
 	d.populateCompanyComboBox()
 	d.populatePeriodComboBox()
+	d.UpdateTable()
 
 	d.self.ShowAll()
 	d.self.SetResizable(false)
@@ -99,6 +104,79 @@ func (d *Dialog) Run() gtk.ResponseType {
 
 func (d *Dialog) Destroy() {
 	d.self.Destroy()
+}
+
+func (d *Dialog) UpdateTable() {
+	query := "SELECT timer.id, timer.start, timer.finish, company.name FROM timer,company WHERE timer.company_id=company.id ORDER BY timer.id DESC"
+	sqlite.SQLite().SelectAndHandle(query, func(r row.Row) {
+		fmt.Printf("%+v\n", r)
+		if iter := d.listStore.Append(); iter != nil {
+			if id, ok := getID(r); ok {
+				if name, ok := getName(r); ok {
+					if start, ok := getStart(r); ok {
+						if finish, ok := getFinish(r); ok {
+							d.listStore.SetValue(iter, idColumnIdx, id)
+							d.listStore.SetValue(iter, nameColumnIdx, name)
+							d.listStore.SetValue(iter, startColumnIdx, shared.TimeAsString(start))
+							d.listStore.SetValue(iter, finishColumnIdx, shared.TimeAsString(finish))
+							d.listStore.SetValue(iter, periodColumnIdx, getPeriod(start, finish))
+						}
+					}
+				}
+			}
+		}
+	})
+}
+
+func getID(r row.Row) (int64, bool) {
+	if id, ok := r["id"]; ok {
+		if id, ok := id.Value.(int64); ok {
+			return id, true
+		}
+	}
+	return -1, false
+}
+func getName(r row.Row) (string, bool) {
+	if name, ok := r["name"]; ok {
+		if name, ok := name.Value.(string); ok {
+			return name, true
+		}
+	}
+	return "", false
+}
+func getStart(r row.Row) (time.Time, bool) {
+	if start, ok := r["start"]; ok {
+		if start, ok := start.Value.(int64); ok {
+			if t := time.Unix(start, 0); !t.IsZero() {
+				return t, true
+			}
+		}
+	}
+	return time.Time{}, false
+}
+func getFinish(r row.Row) (time.Time, bool) {
+	if start, ok := r["finish"]; ok {
+		if start, ok := start.Value.(int64); ok {
+			if t := time.Unix(start, 0); !t.IsZero() {
+				return t, true
+			}
+		}
+	}
+	return time.Time{}, false
+}
+func getPeriod(start, finish time.Time) string {
+	duration := finish.Sub(start)
+	seconds := uint(duration.Seconds())
+	h, m, s := shared.DurationComponents(seconds)
+	if s >= 30 {
+		m += 1
+		if m > 60 {
+			h += 1
+			m -= 60
+		}
+	}
+
+	return fmt.Sprintf("%dh %02dmin", h, m)
 }
 
 func (d *Dialog) createButtons() *gtk.Box {

@@ -167,6 +167,32 @@ func (db *Database) fetchResult() row.Result {
 	return result
 }
 
+func (db *Database) fetchAndHandle(handler func(row.Row)) int {
+	if n := db.columnCount(); n > 0 {
+		if db.step() == vtc.StatusRow {
+			oneRow := row.New()
+			for i := 0; i < n; i++ {
+				f := field.New(db.columnName(i))
+				switch db.columnType(i) {
+				case vtc.Null:
+					f.SetValue(nil)
+				case vtc.Int:
+					f.SetValue(db.fetchInt(i))
+				case vtc.Float:
+					f.SetValue(db.fetchFloat(i))
+				case vtc.Text:
+					f.SetValue(db.fetchText(i))
+				case vtc.Blob:
+					f.SetValue(db.fetchBlob(i))
+				}
+				oneRow.Append(f)
+			}
+			handler(oneRow)
+		}
+	}
+	return db.ErrorCode()
+}
+
 /********************************************************************
 *                                                                   *
 *                          S E T T E R S                            *

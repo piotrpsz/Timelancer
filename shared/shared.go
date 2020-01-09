@@ -71,7 +71,7 @@ func Now() time.Time {
 
 func TimeAsString(t time.Time) string {
 	year, month, day, hour, min, sec := DateTimeComponents(t)
-	return fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, min, sec)
+	return fmt.Sprintf("%d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, min, sec)
 }
 
 func TimeAndDate(t time.Time) (string, string) {
@@ -85,6 +85,21 @@ func DateTimeComponents(t time.Time) (int, int, int, int, int, int) {
 	year, month, day := t.Date()
 	hour, min, sec := t.Hour(), t.Minute(), t.Second()
 	return year, int(month), day, hour, min, sec
+}
+
+func DurationComponents(seconds uint) (uint, uint, uint) {
+	h, m, s := uint(0), uint(0), uint(0)
+
+	if seconds > 0 {
+		s = seconds % 60
+		m = seconds / 60
+		if m > 59 {
+			h = m / 60
+			m = m % 60
+		}
+	}
+
+	return h, m, s
 }
 
 /********************************************************************

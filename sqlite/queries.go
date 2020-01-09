@@ -38,6 +38,23 @@ import (
 	"Timelancer/sqlite/vtc"
 )
 
+func (db *Database) SelectAndHandle(query string, handler func(row.Row)) {
+	if db.prepare(query) {
+		defer db.finalize()
+
+		for {
+			if db.fetchAndHandle(handler) == vtc.StatusRow {
+				continue
+			}
+			break
+		}
+	}
+
+	if err := db.ErrorCode(); err != vtc.StatusDone && err != vtc.Ok {
+		db.checkError()
+	}
+}
+
 func (db *Database) Select(query string) row.Result {
 	if db.prepare(query) {
 		defer db.finalize()
