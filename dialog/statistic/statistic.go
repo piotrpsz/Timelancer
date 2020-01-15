@@ -1,3 +1,31 @@
+/*
+ * BSD 2-Clause License
+ *
+ *	Copyright (c) 2019, Piotr Pszczółkowski (beesoft software)
+ *	All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 package statistic
 
 import (
@@ -53,6 +81,8 @@ type Dialog struct {
 	exportBtn       *gtk.Button
 	treeView        *gtk.TreeView
 	listStore       *gtk.ListStore
+
+	ids []int
 }
 
 func New(parent *gtk.Window) *Dialog {
@@ -92,7 +122,7 @@ func New(parent *gtk.Window) *Dialog {
 func (d *Dialog) ShowAll() {
 	d.populateCompanyComboBox()
 	d.populatePeriodComboBox()
-	d.UpdateTable()
+	d.DidSelectAllCompanies()
 
 	d.self.ShowAll()
 	d.self.SetResizable(false)
@@ -106,10 +136,22 @@ func (d *Dialog) Destroy() {
 	d.self.Destroy()
 }
 
-func (d *Dialog) UpdateTable() {
+func (d *Dialog) DidSelectAllCompanies() {
 	query := "SELECT timer.id, timer.start, timer.finish, company.name FROM timer,company WHERE timer.company_id=company.id ORDER BY timer.id DESC"
+	d.updateTable(query)
+}
+
+func (d *Dialog) DidSelectecCompanyWithID(id int) {
+	tr.Info("id: %d", id)
+	query := fmt.Sprintf("SELECT timer.id, timer.start, timer.finish, company.name FROM timer,company WHERE timer.company_id=%d AND timer.company_id=company.id ORDER BY timer.id DESC", id)
+	d.updateTable(query)
+}
+
+func (d *Dialog) updateTable(query string) {
+	d.listStore.Clear()
+
 	sqlite.SQLite().SelectAndHandle(query, func(r row.Row) {
-		fmt.Printf("%+v\n", r)
+		//fmt.Printf("%+v\n", r)
 		if iter := d.listStore.Append(); iter != nil {
 			if id, ok := getID(r); ok {
 				if name, ok := getName(r); ok {
@@ -205,6 +247,22 @@ func (d *Dialog) createButtons() *gtk.Box {
 	return nil
 }
 
+func (d *Dialog) selectedCompanyChanged() {
+	if row := d.companyComboBox.GetActive(); row > -1 {
+		if row < len(d.ids) {
+			if id := d.ids[row]; id == -1 {
+				d.DidSelectAllCompanies()
+			} else {
+				d.DidSelectecCompanyWithID(id)
+			}
+		}
+	}
+}
+
+func (d *Dialog) selectedPersonChanged() {
+	fmt.Println("selectedPersonCahnged")
+}
+
 func (d *Dialog) createToolbar() *gtk.Grid {
 	if grid, err := gtk.GridNew(); tr.IsOK(err) {
 		if companiesBox := d.createCompanyBox(); companiesBox != nil {
@@ -227,6 +285,7 @@ func (d *Dialog) createCompanyBox() *gtk.Box {
 		if d.companyComboBox, err = gtk.ComboBoxTextNew(); tr.IsOK(err) {
 			if box, err := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 2); tr.IsOK(err) {
 				d.companyComboBox.SetTooltipText(companyTooltip)
+				d.companyComboBox.Connect("changed", d.selectedCompanyChanged)
 
 				box.PackStart(d.companyLabel, false, false, 2)
 				box.PackStart(d.companyComboBox, true, false, 2)
@@ -245,6 +304,7 @@ func (d *Dialog) createPeriodBox() *gtk.Box {
 		if d.periodComboBox, err = gtk.ComboBoxTextNew(); tr.IsOK(err) {
 			if box, err := gtk.BoxNew(gtk.ORIENTATION_HORIZONTAL, 2); tr.IsOK(err) {
 				d.periodComboBox.SetTooltipText(periodTooltip)
+				d.periodComboBox.Connect("changed", d.selectedPersonChanged)
 
 				box.PackStart(d.periodLabel, false, false, 2)
 				box.PackStart(d.periodComboBox, true, false, 2)
@@ -257,14 +317,19 @@ func (d *Dialog) createPeriodBox() *gtk.Box {
 }
 
 func (d *Dialog) populateCompanyComboBox() {
+	var ids []int
+
 	d.companyComboBox.RemoveAll()
 	d.companyComboBox.AppendText("All")
+	ids = append(ids, -1)
 
 	companies := company.CompaniesInUse()
 	for _, c := range companies {
 		d.companyComboBox.AppendText(c.Name())
+		ids = append(ids, c.ID())
 	}
 	d.companyComboBox.SetActive(0)
+	d.ids = ids
 }
 
 func (d *Dialog) populatePeriodComboBox() {
